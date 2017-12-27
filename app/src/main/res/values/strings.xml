@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">BinderDemo</string>
+
+    <string name="remote_service_started">Remote service has started</string>
+    <string name="remote_service_stopped">Remote service has stopped</string>
+    <string name="remote_service_label">Sample Remote Service</string>
+
+</resources>

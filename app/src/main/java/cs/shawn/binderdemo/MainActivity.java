@@ -6,6 +6,9 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+import cs.shawn.binderdemo.aidl.Binding;
+import cs.shawn.binderdemo.aidl.Controller;
+
 /**
  * Created by chenshao on 2017/12/26.
  */

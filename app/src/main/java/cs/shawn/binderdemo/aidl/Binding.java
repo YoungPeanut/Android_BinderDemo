@@ -1,4 +1,4 @@
-package cs.shawn.binderdemo;
+package cs.shawn.binderdemo.aidl;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -17,10 +17,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import cs.shawn.binderdemo.aidl.IRemoteService;
-import cs.shawn.binderdemo.aidl.IRemoteServiceCallback;
-import cs.shawn.binderdemo.aidl.ISecondary;
-import cs.shawn.binderdemo.aidl.RemoteService;
+import cs.shawn.binderdemo.R;
 
 /**
  * Created by chenshao on 2017/12/26.
@@ -60,13 +57,47 @@ public class Binding extends Activity{
         mCallbackText.setText("Not attached.");
     }
 
+/*
+或者这样 隐式启动，但要在Service里配<intent-filter>
+
+    public void onConnectAIDL (View view) {
+        Intent intent = new Intent (AIDL_SERVICE_ACTION);
+        Intent eintent = new Intent (getExplicitIntent (this,
+                intent));
+        bindService (eintent,
+                aidlConnection,
+                BIND_AUTO_CREATE);
+    }
+
+    private Intent getExplicitIntent (Context context, Intent implicitIntent) {
+        // Retrieve all services that can match the given intent
+        PackageManager pm = context.getPackageManager ();
+        List<ResolveInfo> resolveInfo = pm.queryIntentServices (implicitIntent,
+                0);
+        // Make sure only one match was found
+        if (resolveInfo == null || resolveInfo.size () != 1) {
+            return null;
+        }
+        // Get component info and create ComponentName
+        ResolveInfo serviceInfo = resolveInfo.get (0);
+        String packageName = serviceInfo.serviceInfo.packageName;
+        String className = serviceInfo.serviceInfo.name;
+        ComponentName component = new ComponentName (packageName,
+                className);
+        // Create a new intent. Use the old one for extras and such reuse
+        Intent explicitIntent = new Intent (implicitIntent);
+        // Set the component to be explicit
+        explicitIntent.setComponent (component);
+        return explicitIntent;
+    }
+*/
     private View.OnClickListener mBindListener = new View.OnClickListener() {
         public void onClick(View v) {
             // Establish a couple connections with the service, binding
             // by interface names.  This allows other applications to be
             // installed that replace the remote service by implementing
             // the same interface.
-            Intent intent = new Intent(Binding.this, RemoteService.class);
+            Intent intent = new Intent(Binding.this, AidlService.class);
             intent.setAction(IRemoteService.class.getName());
             bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
             intent.setAction(ISecondary.class.getName());
@@ -81,6 +112,13 @@ public class Binding extends Activity{
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            // 更简单但方式
+//            Messenger mService1 = new Messenger(iBinder);
+//            mService1.send();
+
+
+
+
 //            communicating with our service through an AIDL interface
             mService = IRemoteService.Stub.asInterface(iBinder);
 

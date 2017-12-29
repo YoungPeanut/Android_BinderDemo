@@ -1,24 +1,45 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="cs.shawn.binderdemo">
 
+    <permission
+        android:name="cs.shawn.binderdemo.permission.ACCESS_MY_SERVICE"
+        android:protectionLevel="normal" />
+
+    <uses-permission android:name="cs.shawn.binderdemo.permission.ACCESS_MY_SERVICE" />
+
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme">
 
-        <activity android:name=".MainActivity" >
+        <activity android:name=".MainActivity">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".Controller"/>
-        <activity android:name=".Binding"/>
+        <activity android:name=".aidl.Controller" />
+        <activity android:name=".aidl.Binding" />
+        <activity android:name=".messenger.MessengerActivity" />
 
-        <service android:name=".aidl.RemoteService" android:process=":remote"/>
+        <service
+            android:name=".aidl.AidlService"
+            android:process=":remote" />
+
+        <service
+            android:name=".messenger.MessengerService"
+            android:permission="cs.shawn.binderdemo.permission.ACCESS_MY_SERVICE"
+            android:process=":remote_m">
+
+            <intent-filter>
+                <action android:name="cs.shawn.binderdemo.messenger.MessengerService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
 
     </application>
 </manifest>

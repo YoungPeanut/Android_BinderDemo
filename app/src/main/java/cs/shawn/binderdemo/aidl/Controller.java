@@ -1,4 +1,4 @@
-package cs.shawn.binderdemo;
+package cs.shawn.binderdemo.aidl;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -6,7 +6,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
-import cs.shawn.binderdemo.aidl.RemoteService;
+import cs.shawn.binderdemo.R;
 
 /**
  * Created by chenshao on 2017/12/26.
@@ -38,7 +38,7 @@ public class Controller  extends Activity {
             // We use an action code here, instead of explictly supplying
             // the component name, so that other packages can replace
             // the service.
-            startService(new Intent(Controller.this, RemoteService.class));
+            startService(new Intent(Controller.this, AidlService.class));
         }
     };
 
@@ -47,7 +47,7 @@ public class Controller  extends Activity {
             // Cancel a previous call to startService().  Note that the
             // service will not actually stop at this point if there are
             // still bound clients.
-            stopService(new Intent(Controller.this, RemoteService.class));
+            stopService(new Intent(Controller.this, AidlService.class));
         }
     };
 }

@@ -5,9 +5,11 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.Parcel;
 import android.os.Process;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
@@ -15,18 +17,23 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Toast;
 
-import cs.shawn.binderdemo.Controller;
+import java.lang.ref.WeakReference;
+
 import cs.shawn.binderdemo.R;
 
 /**
  * Created by chenshao on 2017/12/26.
- *
+ * <p>
  * service that runs in a different process
  * use IPC to interact with it.
  * bind 和 start两种方式
  */
 
-public class RemoteService extends Service {
+public class AidlService extends Service {
+    static final String PERMISSION = "cs.shawn.binderdemo.permission.ACCESS_MY_SERVICE";
+
+    static final String CHECK_PACKAGENAME = "cs.shawn.binderdemo";
+
     NotificationManager mNM;
 
     @Override
@@ -46,36 +53,41 @@ public class RemoteService extends Service {
     /********* below for bind *************/
 
     private static final int REPORT_MSG = 1;
-    final RemoteCallbackList<IRemoteServiceCallback> callbackList = new RemoteCallbackList<>();
+    private final RemoteCallbackList<IRemoteServiceCallback> callbackList = new RemoteCallbackList<>();
 
-    MyHandler mHandler = new MyHandler();
+    MyHandler mHandler = new MyHandler(this);
+
     // main thread
-    class MyHandler extends Handler{
+    static class MyHandler extends Handler {
+        private final WeakReference<AidlService> ref;
         int mValue = 0;
+
+        MyHandler(AidlService service) {
+            ref = new WeakReference<>(service);
+        }
 
         @Override
         public void handleMessage(Message msg) {
+            RemoteCallbackList<IRemoteServiceCallback> callback = ref.get().callbackList;
             switch (msg.what) {
 
                 case REPORT_MSG: {
 
                     int value = ++mValue;
 
-                    // Broadcast to all clients the new value.
-                    final int N = callbackList.beginBroadcast();
-                    for (int i=0; i<N; i++) {
+                    final int N = callback.beginBroadcast();
+                    for (int i = 0; i < N; i++) {
                         try {
-                            callbackList.getBroadcastItem(i).valueChanged(value);
+                            callback.getBroadcastItem(i).valueChanged(value);
                         } catch (RemoteException e) {
                             e.printStackTrace();
-                            // The RemoteCallbackList will take care of removing
-                            // the dead object for us.
                         }
                     }
-                    callbackList.finishBroadcast();
+                    callback.finishBroadcast();
 
                     sendMessageDelayed(obtainMessage(REPORT_MSG), 1000);
-                } break;
+                }
+                break;
                 default:
                     super.handleMessage(msg);
             }
@@ -106,9 +118,22 @@ public class RemoteService extends Service {
         mNM.notify(R.string.remote_service_started, notification);
     }
 
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.i("RemoteService", "onUnbind");
+        return super.onUnbind(intent);
+    }
+
+    @Override
+    public void onRebind(Intent intent) {
+        Log.i("RemoteService", "onRebind");
+        super.onRebind(intent);
+    }
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        Log.i("RemoteService", "onBind");
 
         mHandler.removeMessages(REPORT_MSG);
         mHandler.sendEmptyMessage(REPORT_MSG);
@@ -125,9 +150,41 @@ public class RemoteService extends Service {
     }
 
     private final IRemoteService.Stub mBinder = new IRemoteService.Stub() {
+
+        @Override
+        public boolean onTransact (int code, Parcel data, Parcel reply, int flags) throws RemoteException {
+
+            // 权限
+            int check = checkCallingOrSelfPermission (PERMISSION);
+
+            if (check == PackageManager.PERMISSION_DENIED) {
+
+                Log.w ("AIDLService",
+                        "[IService onBind] check == PackageManager.PERMISSION_DENIED");
+                return false;
+            }
+            String packageName = "";
+            String[] packages = getPackageManager ().getPackagesForUid (getCallingUid ());
+            if (packages != null && packages.length > 0) {
+                packageName = packages[0];
+            }
+            if (!packageName.equals (CHECK_PACKAGENAME)) {
+
+                Log.w ("AIDLService",
+                        "[IService onBind] packageName fail :" + packageName);
+                return false;
+            }
+
+            return super.onTransact (code,
+                    data,
+                    reply,
+                    flags);
+        }
+
         public void registerCallback(IRemoteServiceCallback cb) {
             if (cb != null) callbackList.register(cb);
         }
+
         public void unregisterCallback(IRemoteServiceCallback cb) {
             if (cb != null) callbackList.unregister(cb);
         }
@@ -137,6 +194,7 @@ public class RemoteService extends Service {
         public int getPid() {
             return Process.myPid();
         }
+
         public void basicTypes(int anInt, long aLong, boolean aBoolean,
                                float aFloat, double aDouble, String aString) {
         }
@@ -144,7 +202,7 @@ public class RemoteService extends Service {
 
     @Override
     public void onDestroy() {
-         mNM.cancel(R.string.remote_service_started);
+        mNM.cancel(R.string.remote_service_started);
 
         Toast.makeText(this, R.string.remote_service_stopped, Toast.LENGTH_SHORT).show();
 
